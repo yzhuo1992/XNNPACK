@@ -34,7 +34,7 @@ class Rounding : public benchmark::Fixture {
   {
     std::random_device random_device;
     auto rng = std::mt19937(random_device());
-    auto f32rng = std::bind(std::uniform_real_distribution<float>(-10.0f, 10.0f), rng);
+    auto f32rng = std::bind(std::uniform_real_distribution<float>(-10.0f, 10.0f), std::ref(rng));
 
     input_.resize(n());
     std::generate(input_.begin(), input_.end(), std::ref(f32rng));
@@ -160,35 +160,35 @@ BENCHMARK_F(RoundingTowardsZero, scalar_trunc)(benchmark::State& state) {
   }
 }
 
-#if !XNN_ARCH_ASMJS && !XNN_ARCH_WASM && !XNN_COMPILER_MSVC && !XNN_COMPILER_ICC
-  BENCHMARK_F(RoundingToNearestEven, psimd_addsub)(benchmark::State& state) {
+#if XNN_ARCH_WASMSIMD
+  BENCHMARK_F(RoundingToNearestEven, wasmsimd_addsub)(benchmark::State& state) {
     for (auto _ : state) {
-      xnn_math_f32_roundne__psimd_addsub(
+      xnn_math_f32_roundne__wasmsimd_addsub(
           n() * sizeof(float), input(), output());
     }
   }
 
-  BENCHMARK_F(RoundingDown, psimd_addsub)(benchmark::State& state) {
+  BENCHMARK_F(RoundingDown, wasmsimd_addsub)(benchmark::State& state) {
     for (auto _ : state) {
-      xnn_math_f32_roundd__psimd_addsub(
+      xnn_math_f32_roundd__wasmsimd_addsub(
           n() * sizeof(float), input(), output());
     }
   }
 
-  BENCHMARK_F(RoundingUp, psimd_addsub)(benchmark::State& state) {
+  BENCHMARK_F(RoundingUp, wasmsimd_addsub)(benchmark::State& state) {
     for (auto _ : state) {
-      xnn_math_f32_roundu__psimd_addsub(
+      xnn_math_f32_roundu__wasmsimd_addsub(
           n() * sizeof(float), input(), output());
     }
   }
 
-  BENCHMARK_F(RoundingTowardsZero, psimd_addsub)(benchmark::State& state) {
+  BENCHMARK_F(RoundingTowardsZero, wasmsimd_addsub)(benchmark::State& state) {
     for (auto _ : state) {
-      xnn_math_f32_roundz__psimd_addsub(
+      xnn_math_f32_roundz__wasmsimd_addsub(
           n() * sizeof(float), input(), output());
     }
   }
-#endif  // !XNN_ARCH_ASMJS && !XNN_ARCH_WASM && !XNN_COMPILER_MSVC && !XNN_COMPILER_ICC
+#endif  // XNN_ARCH_WASMSIMD
 
 #if XNN_ARCH_ARM || XNN_ARCH_ARM64
   BENCHMARK_F(RoundingToNearestEven, neon_addsub)(benchmark::State& state) {

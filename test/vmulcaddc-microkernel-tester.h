@@ -148,7 +148,7 @@ class VMulCAddCMicrokernelTester {
 
       std::fill(packed_w.begin(), packed_w.end(), UINT16_C(0x7E00) /* NaN */);
       xnn_pack_f16_vmulcaddc_w(channels(), channel_tile(),
-        scale.data(), bias.data(), packed_w.data());
+        scale.data(), bias.data(), packed_w.data(), nullptr);
 
       // Compute reference results.
       for (size_t i = 0; i < rows(); i++) {
@@ -181,7 +181,7 @@ class VMulCAddCMicrokernelTester {
       // Verify results.
       for (size_t i = 0; i < rows(); i++) {
         for (size_t j = 0; j < channels(); j++) {
-          ASSERT_NEAR(fp16_ieee_to_fp32_value(y[i * output_stride() + j]), y_ref[i * channels() + j], std::abs(y_ref[i * channels() + j]) * 1.0e-2f)
+          ASSERT_NEAR(fp16_ieee_to_fp32_value(y[i * output_stride() + j]), y_ref[i * channels() + j], std::max(1.0e-4f, std::abs(y_ref[i * channels() + j]) * 1.0e-2f))
             << "at pixel " << i << " / " << rows()
             << ", channel = " << j << " / " << channels();
         }
@@ -217,7 +217,7 @@ class VMulCAddCMicrokernelTester {
 
       std::fill(packed_w.begin(), packed_w.end(), nanf(""));
       xnn_pack_f32_vmulcaddc_w(channels(), channel_tile(),
-        scale.data(), bias.data(), packed_w.data());
+        scale.data(), bias.data(), packed_w.data(), nullptr);
 
       // Compute reference results.
       for (size_t i = 0; i < rows(); i++) {

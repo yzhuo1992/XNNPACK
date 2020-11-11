@@ -73,7 +73,6 @@ def xnnpack_cc_library(
         x86_srcs = [],
         aarch32_srcs = [],
         aarch64_srcs = [],
-        asmjs_srcs = [],
         wasm_srcs = [],
         wasmsimd_srcs = [],
         copts = [],
@@ -87,7 +86,6 @@ def xnnpack_cc_library(
         apple_aarch32_copts = [],
         aarch32_copts = [],
         aarch64_copts = [],
-        asmjs_copts = [],
         wasm_copts = [],
         wasmsimd_copts = [],
         optimized_copts = ["-O2"],
@@ -108,7 +106,6 @@ def xnnpack_cc_library(
       x86_srcs: The list of x86-specific source files.
       aarch32_srcs: The list of AArch32-specific source files.
       aarch64_srcs: The list of AArch64-specific source files.
-      asmjs_srcs: The list of Asm.js-specific source files.
       wasm_srcs: The list of WebAssembly/MVP-specific source files.
       wasmsimd_srcs: The list of WebAssembly/SIMD-specific source files.
       copts: The list of compiler flags to use in all builds. -I flags for
@@ -129,7 +126,6 @@ def xnnpack_cc_library(
                            with Apple Clang.
       aarch32_copts: The list of compiler flags to use in AArch32 builds.
       aarch64_copts: The list of compiler flags to use in AArch64 builds.
-      asmjs_copts: The list of compiler flags to use in Asm.js builds.
       wasm_copts: The list of compiler flags to use in WebAssembly/MVP builds.
       wasmsimd_copts: The list of compiler flags to use in WebAssembly/SIMD
                       builds.
@@ -147,6 +143,7 @@ def xnnpack_cc_library(
         srcs = srcs + select({
             ":linux_k8": psimd_srcs + x86_srcs,
             ":linux_arm": psimd_srcs + aarch32_srcs,
+            ":linux_armeabi": psimd_srcs + aarch32_srcs,
             ":linux_armhf": psimd_srcs + aarch32_srcs,
             ":linux_armv7a": psimd_srcs + aarch32_srcs,
             ":linux_aarch64": psimd_srcs + aarch64_srcs,
@@ -170,7 +167,6 @@ def xnnpack_cc_library(
             ":watchos_x86_64": psimd_srcs + x86_srcs,
             ":tvos_arm64": psimd_srcs + aarch64_srcs,
             ":tvos_x86_64": psimd_srcs + x86_srcs,
-            ":emscripten_asmjs": asmjs_srcs,
             ":emscripten_wasm": wasm_srcs,
             ":emscripten_wasmsimd": psimd_srcs + wasmsimd_srcs,
             "//conditions:default": [],
@@ -181,6 +177,7 @@ def xnnpack_cc_library(
         ] + copts + select({
             ":linux_k8": gcc_x86_copts,
             ":linux_arm": aarch32_copts,
+            ":linux_armeabi": aarch32_copts,
             ":linux_armhf": aarch32_copts,
             ":linux_armv7a": aarch32_copts,
             ":linux_aarch64": aarch64_copts,
@@ -204,7 +201,6 @@ def xnnpack_cc_library(
             ":watchos_x86_64": gcc_x86_copts,
             ":tvos_arm64": aarch64_copts,
             ":tvos_x86_64": gcc_x86_copts,
-            ":emscripten_asmjs": asmjs_copts,
             ":emscripten_wasm": wasm_copts,
             ":emscripten_wasmsimd": wasmsimd_copts,
             "//conditions:default": [],
@@ -225,6 +221,7 @@ def xnnpack_cc_library(
         linkopts = select({
             ":linux_k8": ["-lpthread"],
             ":linux_arm": ["-lpthread"],
+            ":linux_armeabi": ["-lpthread"],
             ":linux_armhf": ["-lpthread"],
             ":linux_armv7a": ["-lpthread"],
             ":linux_aarch64": ["-lpthread"],
@@ -263,6 +260,7 @@ def xnnpack_aggregate_library(
         deps = generic_deps + select({
             ":linux_k8": psimd_deps + x86_deps,
             ":linux_arm": psimd_deps + aarch32_deps,
+            ":linux_armeabi": psimd_deps + aarch32_deps,
             ":linux_armhf": psimd_deps + aarch32_deps,
             ":linux_armv7a": psimd_deps + aarch32_deps,
             ":linux_aarch64": psimd_deps + aarch64_deps,
@@ -288,7 +286,6 @@ def xnnpack_aggregate_library(
             ":tvos_x86_64": psimd_deps + x86_deps,
             ":emscripten_wasm": wasm_deps,
             ":emscripten_wasmsimd": psimd_deps + wasmsimd_deps,
-            ":emscripten_asmjs": [],
         }),
     )
 

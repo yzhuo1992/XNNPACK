@@ -32,14 +32,14 @@ const char* xnn_node_type_to_string(enum xnn_node_type type) {
       return "Ceiling";
     case xnn_node_type_clamp:
       return "Clamp";
-    case xnn_node_type_constant_pad:
-      return "Constant Pad";
     case xnn_node_type_convolution_2d:
       return "Convolution 2D";
     case xnn_node_type_deconvolution_2d:
       return "Deconvolution 2D";
     case xnn_node_type_depthwise_convolution_2d:
       return "Depthwise Convolution 2D";
+    case xnn_node_type_depth_to_space:
+      return "Depth to Space";
     case xnn_node_type_divide:
       return "Divide";
     case xnn_node_type_fully_connected:
@@ -68,8 +68,16 @@ const char* xnn_node_type_to_string(enum xnn_node_type type) {
       return "Sigmoid";
     case xnn_node_type_softmax:
       return "Softmax";
+    case xnn_node_type_static_constant_pad:
+      return "Static Constant Pad";
+    case xnn_node_type_static_reshape:
+      return "Static Reshape";
+    case xnn_node_type_static_resize_bilinear_2d:
+      return "Static Resize Bilinear 2D";
     case xnn_node_type_square:
       return "Square";
+    case xnn_node_type_square_root:
+      return "Square Root";
     case xnn_node_type_squared_difference:
       return "Squared Difference";
     case xnn_node_type_subtract:

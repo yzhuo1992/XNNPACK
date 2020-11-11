@@ -48,7 +48,7 @@ static void GEMMBenchmark(benchmark::State& state,
 
   std::random_device random_device;
   auto rng = std::mt19937(random_device());
-  auto f32rng = std::bind(std::uniform_real_distribution<float>(), rng);
+  auto f32rng = std::bind(std::uniform_real_distribution<float>(), std::ref(rng));
   auto f16rng = std::bind(fp16_ieee_from_fp32_value, f32rng);
 
   std::vector<uint16_t> a(mc * kc);
@@ -66,16 +66,14 @@ static void GEMMBenchmark(benchmark::State& state,
 
   std::vector<uint16_t, AlignedAllocator<uint16_t, 32>> w(w_elements * num_buffers);
   std::fill(w.begin(), w.end(), 0);
-  xnn_pack_f16_gemm_goi_w(1 /* groups */, nc, kc, nr, kr, sr, k.data(), b.data(), w.data());
+  xnn_pack_f16_gemm_goi_w(1 /* groups */, nc, kc, nr, kr, sr, k.data(), b.data(), w.data(), nullptr);
   std::vector<uint16_t> c(c_elements * num_buffers);
   std::fill(c.begin(), c.end(), UINT16_C(0x7E00) /* NaN */);
 
   // Prepare minmax parameters.
   xnn_f16_scaleminmax_params params;
   params = xnn_init_f16_scaleminmax_params(
-    UINT16_C(0x3C00),  /* 1.0 */
-    UINT16_C(0x7C00),  /* inf */
-    UINT16_C(0xFC00)); /* -inf */
+    UINT16_C(0x3C00)  /* 1.0 */, UINT16_C(0x7C00)  /* inf */, UINT16_C(0xFC00)  /* -inf */);
 
   size_t buffer_index = 0;
   for (auto _ : state) {

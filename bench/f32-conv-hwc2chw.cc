@@ -37,7 +37,7 @@ static void DConvHWC2CHW3X3S2P1Benchmark(benchmark::State& state,
 
   std::random_device random_device;
   auto rng = std::mt19937(random_device());
-  auto f32rng = std::bind(std::uniform_real_distribution<float>(0.0f, 1.0f), rng);
+  auto f32rng = std::bind(std::uniform_real_distribution<float>(0.0f, 1.0f), std::ref(rng));
 
   const size_t input_channels = 3;
   const size_t kernel_size = 3;
@@ -68,7 +68,7 @@ static void DConvHWC2CHW3X3S2P1Benchmark(benchmark::State& state,
   xnn_pack_f32_dconv_oki_w(
     output_channels, input_channels, output_channels_tile,
     kernel_size /* kernel height */, kernel_size /* kernel width */,
-    kernel.data(), bias.data(), packed_weights.data());
+    kernel.data(), bias.data(), packed_weights.data(), NULL);
   for (size_t n = 1; n < num_buffers; n++) {
     std::copy(packed_weights.cbegin(),
       packed_weights.cbegin() + weights_elements,
@@ -131,13 +131,13 @@ static void DConvHWC2CHW3X3S2P1Benchmark(benchmark::State& state,
   BENCHMARK_DCONV(f32_conv_hwc2chw_3x3s2p1c3x4__sse_2x2);
 #endif
 
-#if !XNN_ARCH_ASMJS && !XNN_ARCH_WASM && !XNN_COMPILER_MSVC && !XNN_COMPILER_ICC
+#if !XNN_ARCH_WASM && !XNN_COMPILER_MSVC && !XNN_COMPILER_ICC
   static void f32_conv_hwc2chw_3x3s2p1c3x4__psimd_2x2(benchmark::State& state, const char* net) {
     DConvHWC2CHW3X3S2P1Benchmark(state, xnn_f32_conv_hwc2chw_ukernel_3x3s2p1c3x4__psimd_2x2, 4);
   }
 
   BENCHMARK_DCONV(f32_conv_hwc2chw_3x3s2p1c3x4__psimd_2x2);
-#endif  // !XNN_ARCH_ASMJS && !XNN_ARCH_WASM && !XNN_COMPILER_MSVC && !XNN_COMPILER_ICC
+#endif  // !XNN_ARCH_WASM && !XNN_COMPILER_MSVC && !XNN_COMPILER_ICC
 
 static void f32_conv_hwc2chw_3x3s2p1c3x4__scalar_1x1(benchmark::State& state, const char* net) {
   DConvHWC2CHW3X3S2P1Benchmark(state, xnn_f32_conv_hwc2chw_ukernel_3x3s2p1c3x4__scalar_1x1, 4);

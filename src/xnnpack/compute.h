@@ -69,7 +69,9 @@ struct gemm_context {
   uint32_t log2_csize;
   struct xnn_hmp_gemm_ukernel ukernel;
   union {
-    union xnn_q8_gemm_params q8;
+    union xnn_qs8_gemm_params qs8;
+    union xnn_qu8_gemm_params qu8;
+    struct xnn_f16_scaleminmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
 };
@@ -167,13 +169,23 @@ struct igemm_context {
   uint32_t log2_csize;
   struct xnn_hmp_igemm_ukernel ukernel;
   union {
-    union xnn_q8_gemm_params q8;
+    union xnn_qs8_gemm_params qs8;
+    union xnn_qu8_gemm_params qu8;
+    struct xnn_f16_scaleminmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
 };
 
 #ifndef __cplusplus
   XNN_PRIVATE void xnn_compute_grouped_igemm(
+      const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t group_index,
+      size_t mr_block_start,
+      size_t nr_block_start,
+      size_t mr_block_size,
+      size_t nr_block_size);
+
+  XNN_PRIVATE void xnn_compute_grouped_batch_igemm(
       const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
       size_t group_index,
@@ -183,6 +195,13 @@ struct igemm_context {
       size_t nr_block_size);
 
   XNN_PRIVATE void xnn_compute_igemm(
+      const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t mr_block_start,
+      size_t nr_block_start,
+      size_t mr_block_size,
+      size_t nr_block_size);
+
+  XNN_PRIVATE void xnn_compute_batch_igemm(
       const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
       size_t mr_block_start,
@@ -194,6 +213,15 @@ struct igemm_context {
     XNN_PRIVATE void xnn_compute_hmp_grouped_igemm(
         const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
         uint32_t uarch_index,
+        size_t group_index,
+        size_t mr_block_start,
+        size_t nr_block_start,
+        size_t mr_block_size,
+        size_t nr_block_size);
+
+    XNN_PRIVATE void xnn_compute_hmp_grouped_batch_igemm(
+        const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
+        uint32_t uarch_index,
         size_t batch_index,
         size_t group_index,
         size_t mr_block_start,
@@ -202,6 +230,14 @@ struct igemm_context {
         size_t nr_block_size);
 
     XNN_PRIVATE void xnn_compute_hmp_igemm(
+        const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
+        uint32_t uarch_index,
+        size_t mr_block_start,
+        size_t nr_block_start,
+        size_t mr_block_size,
+        size_t nr_block_size);
+
+    XNN_PRIVATE void xnn_compute_batch_hmp_igemm(
         const struct igemm_context context[restrict XNN_MIN_ELEMENTS(1)],
         uint32_t uarch_index,
         size_t batch_index,
@@ -229,7 +265,9 @@ struct subgemm_context {
   uint32_t log2_csize;
   struct xnn_hmp_gemm_ukernel ukernel;
   union {
-    union xnn_q8_gemm_params q8;
+    union xnn_qs8_gemm_params qs8;
+    union xnn_qu8_gemm_params qu8;
+    struct xnn_f16_scaleminmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
 };
@@ -273,7 +311,9 @@ struct subconv_context {
   uint32_t log2_csize;
   struct xnn_hmp_igemm_ukernel ukernel;
   union {
-    union xnn_q8_gemm_params q8;
+    union xnn_qs8_gemm_params qs8;
+    union xnn_qu8_gemm_params qu8;
+    struct xnn_f16_scaleminmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
 };
@@ -331,19 +371,23 @@ struct conv2d_context {
 #endif
 
 struct dwconv_context {
-  size_t groups;
-  const void** indirection_buffer;
-  size_t indirection_buffer_row_stride;
-  size_t indirection_buffer_col_stride;
+  const void** indirect_input;
+  size_t indirect_input_width_stride;
+  size_t indirect_input_height_stride;
+  size_t input_offset;
+  size_t input_batch_stride;
   const void* packed_weights;
   void* output;
+  size_t output_batch_stride;
+  size_t output_height_stride;
   size_t output_width;
-  size_t output_row_stride;
-  size_t output_col_increment;
-  size_t input_offset;
+  size_t groups;
   const void* zero;
+  size_t output_increment;
   union {
-    union xnn_q8_gemm_params q8;
+    union xnn_qs8_gemm_params qs8;
+    union xnn_qu8_gemm_params qu8;
+    struct xnn_f16_minmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
   union {
@@ -354,6 +398,7 @@ struct dwconv_context {
 #ifndef __cplusplus
   XNN_PRIVATE void xnn_compute_dwconv_unipass(
       const struct dwconv_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index,
       size_t output_y);
 #endif
 
@@ -370,15 +415,11 @@ struct dwconv2d_context {
   void* output;
   size_t output_channel_stride;
   size_t output_batch_stride;
-  size_t input_tuple_stride;
-  size_t output_tuple_stride;
-  size_t input_pixel_stride;
-  size_t output_pixel_stride;
   union {
     union xnn_f32_chw_params f32;
   } params;
   union {
-    xnn_dwconv_chw_ukernel_function chw_ukernel;
+    xnn_dwconv2d_chw_ukernel_function chw_ukernel;
   };
 };
 
@@ -387,6 +428,29 @@ struct dwconv2d_context {
       const struct dwconv2d_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
       size_t channel);
+#endif
+
+struct depth_to_space_chw2hwc_context {
+  size_t output_channels;
+  size_t input_height;
+  size_t input_width;
+  uint32_t block_size;
+  const void* input;
+  void* output;
+  size_t input_batch_stride;
+  size_t output_batch_stride;
+  size_t input_channel_stride;
+  size_t input_height_stride;
+  size_t output_height_stride;
+  size_t output_width_stride;
+  // Pointer to DEPTH_TO_SPACE micro-kernel function.
+  xnn_depth_to_space_chw2hwc_ukernel_function ukernel;
+};
+
+#ifndef __cplusplus
+  XNN_PRIVATE void xnn_compute_depth_to_space_chw2hwc(
+      const struct depth_to_space_chw2hwc_context* context,
+      size_t batch_index);
 #endif
 
 struct max_pooling_context {
@@ -456,9 +520,6 @@ struct argmax_pooling_context {
   size_t input_increment;
   size_t output_increment;
   union {
-    union xnn_f32_minmax_params f32;
-  } params;
-  union {
     xnn_argmaxpool_unipass_ukernel_function unipass_ukernel;
     xnn_argmaxpool_multipass_ukernel_function multipass_ukernel;
   };
@@ -491,7 +552,7 @@ struct average_pooling_context {
   size_t input_increment;
   size_t output_increment;
   union {
-    union xnn_q8_avgpool_params q8;
+    union xnn_qu8_avgpool_params qu8;
     union xnn_f32_scaleminmax_params f32;
   } params;
   union {
@@ -560,7 +621,8 @@ struct global_average_pooling_nwc_context {
   void* output;
   size_t output_batch_stride;
   union {
-    union xnn_q8_avgpool_params q8;
+    union xnn_qs8_avgpool_params qs8;
+    union xnn_qu8_avgpool_params qu8;
     struct xnn_f16_scaleminmax_params f16;
     union xnn_f32_scaleminmax_params f32;
   } params;
@@ -625,12 +687,42 @@ struct resize_bilinear_context {
   xnn_ibilinear_ukernel_function ukernel;
 };
 
+struct resize_bilinear_chw_context {
+  // Number of pixels per output image plane.
+  size_t output_pixels;
+  // Number of channels multiplied by sizeof(input element).
+  size_t channels;
+  // Stride, in bytes, between adjacent channels in the input.
+  size_t input_channel_stride;
+  // Indirection buffer with pointers related to rows of input pixels.
+  const void** indirect_input;
+  // Offset, in bytes, to be added to pointers in indirection buffer.
+  size_t input_offset;
+  // Stride, in bytes, between images of consecutive batches in the input.
+  size_t input_batch_stride;
+  // Packed pairs of (x, y) linear interpolation coefficients.
+  const void* packed_weights;
+  // Pointer to the output tensor.
+  void* output;
+  // Stride, in bytes, between images of consecutive batches in the output.
+  size_t output_batch_stride;
+  // Stride, in bytes, between consecutive channels of an output image.
+  size_t output_channel_stride;
+  // Pointer to BILINEAR micro-kernel function.
+  xnn_ibilinear_chw_ukernel_function ukernel;
+};
+
 #ifndef __cplusplus
   XNN_PRIVATE void xnn_compute_resize_bilinear(
       const struct resize_bilinear_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
       size_t pixel_start,
       size_t pixel_range);
+  XNN_PRIVATE void xnn_compute_resize_bilinear_chw(
+    const struct resize_bilinear_chw_context context[restrict XNN_MIN_ELEMENTS(1)],
+    size_t batch_index,
+    size_t pixel_start,
+    size_t pixel_range);
 #endif
 
 struct elementwise_binary_context {
@@ -642,7 +734,9 @@ struct elementwise_binary_context {
   size_t y_stride[XNN_MAX_TENSOR_DIMS - 1];
   size_t elements;
   union {
-    union xnn_q8_add_params q8;
+    union xnn_qs8_add_params qs8;
+    union xnn_qu8_add_params qu8;
+    struct xnn_f16_minmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
   xnn_vbinary_ukernel_function ukernel;
@@ -776,6 +870,7 @@ struct vmulcaddc_context {
   size_t y_stride;
   xnn_vmulcaddc_ukernel_function ukernel;
   union {
+    struct xnn_f16_minmax_params f16;
     union xnn_f32_minmax_params f32;
   } params;
 };
